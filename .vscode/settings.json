@@ -1,0 +1,9 @@
+{
+  "editor.rulers": [
+    100
+  ],
+  "editor.formatOnSave": true, // For Black
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": "always" // For Isort
+  }
+}

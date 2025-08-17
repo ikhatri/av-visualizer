@@ -1,0 +1,23 @@
+[project]
+name = "av-visualizer"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "black>=25.1.0",
+    "bucketed-scene-flow-eval>=2.0.25",
+    "dltype>=0.2.0",
+    "isort>=6.0.1",
+    "matplotlib>=3.10.5",
+    "numpy>=2.3.2",
+    "plotly>=6.3.0",
+    "ultraplot>=1.60.1",
+    "viser>=1.0.4",
+]
+
+[tool.black]
+line-length = 100
+
+[tool.isort]
+profile = "black"
