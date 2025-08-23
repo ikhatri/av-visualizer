@@ -1,26 +1,16 @@
 import time
 from pathlib import Path
 
-# from typing import Annotated
 import numpy as np
+import trimesh
 import viser
 from bucketed_scene_flow_eval.datasets import Argoverse2CausalSceneFlow
-from bucketed_scene_flow_eval.datastructures.dataclasses import BoundingBox
+from einops import repeat
 from pyquaternion import Quaternion
+from trimesh.visual import TextureVisuals
+from trimesh.visual.material import PBRMaterial
 
-# from dltype import FloatTensor, IntTensor, dltyped
-
-
-# @dltyped() # Need to remove this until macos float128 bug fixed
-def colorize_points_z_height(
-    points: np.ndarray,  # Annotated[np.ndarray, FloatTensor["N 3"]],
-) -> np.ndarray:  # Annotated[np.ndarray, IntTensor["N 3"]]:
-    z_min, z_max = points[:, 2].min(), points[:, 2].max()
-    normalized_z = (points[:, 2] - z_min) / (z_max - z_min)
-    point_colors = np.zeros((points.shape[0], 3), dtype=np.uint8)
-    point_colors[:, 0] = (normalized_z * 255).astype(np.uint8)  # Red channel.
-    point_colors[:, 2] = ((1 - normalized_z) * 255).astype(np.uint8)  # Blue channel.
-    return point_colors
+from av2_colors import AV2_COLORS
 
 
 def main():
@@ -51,20 +41,19 @@ def main():
     av2_dataset = Argoverse2CausalSceneFlow(
         root_dir=Path("/efs/argoverse2/val"),
         use_gt_flow=False,
-        flow_data_path=Path(
-            "/efs/argoverse2/val_sceneflow_feather"
-        ),
         load_boxes=True,
         load_flow=False,
         use_cache=True,
         subsequence_length=num_frames,
     )
     point_nodes: list[viser.PointCloudHandle] = []
-    box_nodes: list[list[viser.BoxHandle]] = []
-    frame_pair=av2_dataset[0]
+    box_nodes: list[dict[str, viser.BatchedGlbHandle]] = []
+    frame_pair = av2_dataset[0]
     for i, frame in enumerate(frame_pair):
         points = frame.pc.full_ego_pc.points
-        point_colors = colorize_points_z_height(points)
+        point_colors = repeat(
+            np.array([0, 0, 255]).astype(np.uint8), "c -> n c", n=points.shape[0]
+        )
         point_nodes.append(
             server.scene.add_point_cloud(
                 name=f"/frame_{i + 1}/lidar_points",
@@ -75,17 +64,43 @@ def main():
                 point_shape="rounded",
             )
         )
-        boxes_t = []
+
+        boxes_by_category = {}
         for box in frame.boxes:
-            boxes_t.append(server.scene.add_box(
-                name=f"/frame_{i + 1}/boxes/{box.track_uuid}",
-                dimensions=(box.length, box.width, box.height),
-                position=box.pose.translation,
-                wxyz=Quaternion(matrix=box.pose.rotation_matrix).elements,
-                wireframe=True,
-                visible=False,
-            ))
-        box_nodes.append(boxes_t)
+            category = box.category
+            if category not in boxes_by_category:
+                m = PBRMaterial(
+                    name=category,
+                    baseColorFactor=[*AV2_COLORS[category], 128],  # Your RGBA color
+                    alphaMode="BLEND",
+                )
+                base_box = trimesh.creation.box(extents=(1.0, 1.0, 1.0))
+                base_box.visual = TextureVisuals(material=m)
+                boxes_by_category[category] = {
+                    "dims": [],
+                    "positions": [],
+                    "rotations": [],
+                    "base_box": base_box,
+                }
+
+            boxes_by_category[category]["dims"].append(
+                [box.length, box.width, box.height]
+            )
+            boxes_by_category[category]["positions"].append(box.pose.translation)
+            boxes_by_category[category]["rotations"].append(
+                Quaternion(matrix=box.pose.rotation_matrix).elements
+            )
+
+        category_nodes = {}
+        for category in boxes_by_category.keys():
+            category_nodes[category] = server.scene.add_batched_meshes_trimesh(
+                name=f"/frame_{i + 1}/{category}_boxes",
+                batched_positions=np.stack(boxes_by_category[category]["positions"]),
+                batched_scales=np.array(boxes_by_category[category]["dims"]),
+                batched_wxyzs=np.stack(boxes_by_category[category]["rotations"]),
+                mesh=boxes_by_category[category]["base_box"],
+            )
+        box_nodes.append(category_nodes)
 
     # Playback update loop.
     prev_timestep = gui_timestep.value
@@ -98,11 +113,12 @@ def main():
         with server.atomic():
             # Toggle visibility.
             point_nodes[current_timestep].visible = True
-            for b in box_nodes[current_timestep]:
-                b.visible=True
+            for c in box_nodes[current_timestep]:
+                box_nodes[current_timestep][c].visible = True
+
             point_nodes[prev_timestep].visible = False
-            for b in box_nodes[prev_timestep]:
-                b.visible=False
+            for c in box_nodes[prev_timestep]:
+                box_nodes[prev_timestep][c].visible = False
         prev_timestep = current_timestep
         server.flush()  # Optional!
 

@@ -56,6 +56,7 @@ dependencies = [
     { name = "black" },
     { name = "bucketed-scene-flow-eval" },
     { name = "dltype" },
+    { name = "einops" },
     { name = "isort" },
     { name = "matplotlib" },
     { name = "numpy" },
@@ -69,6 +70,7 @@ requires-dist = [
     { name = "black", specifier = ">=25.1.0" },
     { name = "bucketed-scene-flow-eval", specifier = ">=2.0.25" },
     { name = "dltype", specifier = ">=0.2.0" },
+    { name = "einops", specifier = ">=0.8.1" },
     { name = "isort", specifier = ">=6.0.1" },
     { name = "matplotlib", specifier = ">=3.10.5" },
     { name = "numpy", specifier = ">=2.3.2" },
@@ -320,14 +322,23 @@ wheels = [
 
 [[package]]
 name = "dltype"
-version = "0.2.0"
+version = "0.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/70/bb/b89bc0d0a7f34d460b8de2aab023eaa70672c12ed3a607dbf2b7051f20fe/dltype-0.2.0.tar.gz", hash = "sha256:8294d22dcb286b947cedfe38f635fa486b8e4d4c58d3aa7fe8a61e49fb18bdc8", size = 31905, upload-time = "2025-07-03T21:57:38.536Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/31/3a/c8bad76c8f37f1c0b52b6923b673e684fc16ad79dd94c635e36faa209281/dltype-0.3.1.tar.gz", hash = "sha256:f8478083129c5004c5434105cdf3eb4d68742944312f6b3da75ca937e9bf86f4", size = 30631, upload-time = "2025-08-18T13:42:27.524Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b2/b3/b7c4d35ad228ffd1c7c02d5d68c26e41e933c3ec35288430a34abe63b810/dltype-0.2.0-py3-none-any.whl", hash = "sha256:113e2bbc8292abcb18acc674f877887f8cc08e798ebbf6b1abd67f02fd8424d3", size = 33928, upload-time = "2025-07-03T21:57:37.644Z" },
+    { url = "https://files.pythonhosted.org/packages/58/8f/14512b405cc28b9184db9273334a3d34928b7ef449e7f7868f7e73b890fb/dltype-0.3.1-py3-none-any.whl", hash = "sha256:7a1fd04bcd17c0cf44d10b09d3e14939bda7549f31ceb8aae5303a44b27f6e2c", size = 31823, upload-time = "2025-08-18T13:42:26.22Z" },
+]
+
+[[package]]
+name = "einops"
+version = "0.8.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/e5/81/df4fbe24dff8ba3934af99044188e20a98ed441ad17a274539b74e82e126/einops-0.8.1.tar.gz", hash = "sha256:de5d960a7a761225532e0f1959e5315ebeafc0cd43394732f103ca44b9837e84", size = 54805, upload-time = "2025-02-09T03:17:00.434Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/87/62/9773de14fe6c45c23649e98b83231fffd7b9892b6cf863251dc2afa73643/einops-0.8.1-py3-none-any.whl", hash = "sha256:919387eb55330f5757c6bea9165c5ff5cfe63a642682ea788a6d472576d81737", size = 64359, upload-time = "2025-02-09T03:17:01.998Z" },
 ]
 
 [[package]]
@@ -1960,14 +1971,13 @@ wheels = [
 
 [[package]]
 name = "viser"
-version = "1.0.4"
+version = "1.0.6"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "imageio" },
     { name = "msgspec" },
     { name = "nodeenv" },
     { name = "numpy" },
-    { name = "opencv-python" },
     { name = "psutil" },
     { name = "requests" },
     { name = "rich" },
@@ -1979,9 +1989,9 @@ dependencies = [
     { name = "websockets" },
     { name = "yourdfpy" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/77/77/eae53b28fd6c26d3849420b8acff3d0086a9743a0ea37ae019f5eba698cf/viser-1.0.4.tar.gz", hash = "sha256:468903865d477af90fb572529e42fa41b2abd6753bff10dd24f29d55068f449a", size = 29007409, upload-time = "2025-08-07T08:02:05.426Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/20/cb/18a485202f7e107902f2d38642f491c6b10e08f8725d177b2dc3f895fef1/viser-1.0.6.tar.gz", hash = "sha256:3bf9b0ec9994a4de6fe5957fb882d5e93232b07d9e890d93a59e047097154891", size = 28962768, upload-time = "2025-08-21T06:43:31.941Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/bf/ac/12fd7119f36a4ede0e4c58632b5dcd5817ea24d3a0e08c72b66b7f15b419/viser-1.0.4-py3-none-any.whl", hash = "sha256:59808b0799ee1e7354c199fba71d69de9b7c886697862f62b2690d025b7f04f6", size = 29078196, upload-time = "2025-08-07T08:02:02.662Z" },
+    { url = "https://files.pythonhosted.org/packages/ca/5d/939381bc3dcc46f52aa9d5173d58d626846f0c601acfaad36571f8875738/viser-1.0.6-py3-none-any.whl", hash = "sha256:da61dff82f38b3d89c949159f4644846a6bdcf01f85eb6a530ad4ba3d1b746b0", size = 29036222, upload-time = "2025-08-21T06:43:28.622Z" },
 ]
 
 [[package]]
