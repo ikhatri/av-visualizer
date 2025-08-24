@@ -124,6 +124,10 @@ def main():
                 node.batched_positions = np.array(box_dict["positions"])
                 node.batched_wxyzs = np.array(box_dict["rotations"])
                 node.batched_scales = np.array(box_dict["dims"])
+                node.batched_colors = np.broadcast_to(
+                    np.array(AV2_COLORS[category]),
+                    node.batched_positions.shape,
+                )
 
         prev_timestep = current_timestep
         server.flush()  # Optional!
