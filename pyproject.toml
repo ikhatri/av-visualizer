@@ -13,6 +13,7 @@ dependencies = [
     "matplotlib>=3.10.5",
     "numpy>=2.3.2",
     "plotly>=6.3.0",
+    "torch>=2.9.0",
     "ultraplot>=1.60.1",
     "viser>=1.0.4",
 ]
