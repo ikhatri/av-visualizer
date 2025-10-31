@@ -7,8 +7,6 @@ import viser
 from bucketed_scene_flow_eval.datasets import Argoverse2CausalSceneFlow
 from einops import repeat
 from pyquaternion import Quaternion
-from trimesh.visual import TextureVisuals
-from trimesh.visual.material import PBRMaterial
 
 from av2_colors import AV2_COLORS
 
@@ -34,8 +32,6 @@ def main():
             initial_value=0,
             disabled=True,
         )
-        gui_next_frame = server.gui.add_button("Next Frame", disabled=True)
-        gui_prev_frame = server.gui.add_button("Prev Frame", disabled=True)
         gui_playing = server.gui.add_checkbox("Playing", True)
 
     av2_dataset = Argoverse2CausalSceneFlow(
@@ -47,8 +43,10 @@ def main():
         subsequence_length=num_frames,
     )
     point_nodes: list[viser.PointCloudHandle] = []
-    box_nodes: list[dict[str, viser.BatchedGlbHandle]] = []
+
     frame_pair = av2_dataset[0]
+    box_categories: set[str] = set()
+    boxes_by_category: list[dict[str, dict[str, list]]] = []
     for i, frame in enumerate(frame_pair):
         points = frame.pc.full_ego_pc.points
         point_colors = repeat(
@@ -64,43 +62,43 @@ def main():
                 point_shape="rounded",
             )
         )
+        box_categories.update(box.category for box in frame.boxes)
 
-        boxes_by_category = {}
+        boxes_i = {}
         for box in frame.boxes:
             category = box.category
-            if category not in boxes_by_category:
-                m = PBRMaterial(
-                    name=category,
-                    baseColorFactor=[*AV2_COLORS[category], 128],  # Your RGBA color
-                    alphaMode="BLEND",
-                )
-                base_box = trimesh.creation.box(extents=(1.0, 1.0, 1.0))
-                base_box.visual = TextureVisuals(material=m)
-                boxes_by_category[category] = {
+            if category not in boxes_i:
+                boxes_i[category] = {
                     "dims": [],
                     "positions": [],
                     "rotations": [],
-                    "base_box": base_box,
                 }
-
-            boxes_by_category[category]["dims"].append(
-                [box.length, box.width, box.height]
-            )
-            boxes_by_category[category]["positions"].append(box.pose.translation)
-            boxes_by_category[category]["rotations"].append(
+            boxes_i[category]["dims"].append([box.length, box.width, box.height])
+            boxes_i[category]["positions"].append(box.pose.translation)
+            boxes_i[category]["rotations"].append(
                 Quaternion(matrix=box.pose.rotation_matrix).elements
             )
+        boxes_by_category.append(boxes_i)
 
-        category_nodes = {}
-        for category in boxes_by_category.keys():
-            category_nodes[category] = server.scene.add_batched_meshes_trimesh(
-                name=f"/frame_{i + 1}/{category}_boxes",
-                batched_positions=np.stack(boxes_by_category[category]["positions"]),
-                batched_scales=np.array(boxes_by_category[category]["dims"]),
-                batched_wxyzs=np.stack(boxes_by_category[category]["rotations"]),
-                mesh=boxes_by_category[category]["base_box"],
-            )
-        box_nodes.append(category_nodes)
+    trimesh_box = trimesh.creation.box(extents=[1, 1, 1])
+    category_nodes: dict[str, viser.BatchedMeshHandle] = {}
+    for category in box_categories:
+        category_nodes[category] = server.scene.add_batched_meshes_simple(
+            f"/boxes/{category}",
+            trimesh_box.vertices,
+            trimesh_box.faces,
+            batched_positions=np.array(
+                [[0.0, 0.0, 0.0]]
+            ),  # Placeholder, will be updated.
+            batched_wxyzs=np.array(
+                [[1.0, 0.0, 0.0, 0.0]]
+            ),  # Placeholder, will be updated.
+            batched_scales=np.array([[1.0, 1.0, 1.0]]),
+            batched_colors=AV2_COLORS[category],  # Broadcasted.
+            opacity=0.5,
+            flat_shading=True,
+            lod="off",
+        )
 
     # Playback update loop.
     prev_timestep = gui_timestep.value
@@ -113,12 +111,24 @@ def main():
         with server.atomic():
             # Toggle visibility.
             point_nodes[current_timestep].visible = True
-            for c in box_nodes[current_timestep]:
-                box_nodes[current_timestep][c].visible = True
-
             point_nodes[prev_timestep].visible = False
-            for c in box_nodes[prev_timestep]:
-                box_nodes[prev_timestep][c].visible = False
+
+            # Update boxes for the current timestep.
+            boxes_i = boxes_by_category[current_timestep]
+            for category, node in category_nodes.items():
+                box_dict = boxes_i.get(category, None)
+                if box_dict is None:
+                    node.visible = False
+                    continue
+
+                node.batched_positions = np.array(box_dict["positions"])
+                node.batched_wxyzs = np.array(box_dict["rotations"])
+                node.batched_scales = np.array(box_dict["dims"])
+                node.batched_colors = np.broadcast_to(
+                    np.array(AV2_COLORS[category]),
+                    node.batched_positions.shape,
+                )
+
         prev_timestep = current_timestep
         server.flush()  # Optional!
 
@@ -126,6 +136,9 @@ def main():
         # Update the timestep if we're playing.
         if gui_playing.value:
             gui_timestep.value = (gui_timestep.value + 1) % num_frames
+            gui_timestep.disabled = True
+        else:
+            gui_timestep.disabled = False
 
         # Update point size of both this timestep and the next one! There's
         # redundancy here, but this will be optimized out internally by viser.
