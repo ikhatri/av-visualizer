@@ -10,7 +10,7 @@ from einops import repeat
 def main():
     server = viser.ViserServer()
 
-    num_frames = 5
+    num_frames = 2
 
     with server.gui.add_folder("Playback"):
         gui_point_size = server.gui.add_slider(
@@ -48,7 +48,10 @@ def main():
             visible=True,
             point_shape="rounded",
         )
-        frame.flow.full_flow = -frame.flow.full_flow  # Negate flow
+
+        # frame.flow.full_flow = frame.pc.pose.ego_to_global.inverse().transform_flow(
+        # frame.flow.full_flow
+        # )
 
         # First point cloud has no flow, use it as is
         points_compensated = frame.pc.flow(frame.flow).full_global_pc.points
